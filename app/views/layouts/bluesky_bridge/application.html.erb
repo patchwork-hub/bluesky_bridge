@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bluesky bridge</title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+
+  <%= yield :head %>
+
+  <%= stylesheet_link_tag    "bluesky_bridge/application", media: "all" %>
+</head>
+<body>
+
+<%= yield %>
+
+</body>
+</html>
