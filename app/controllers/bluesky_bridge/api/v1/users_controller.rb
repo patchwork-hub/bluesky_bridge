@@ -1,28 +1,26 @@
 module BlueskyBridge::Api::V1
   class UsersController < Api::BaseController
     include Authorization
-    before_action :require_user!
-    before_action -> { doorkeeper_authorize! :read, :write }
-    protect_from_forgery with: :null_session
+    before_action :require_authenticated_user!
 
     def update_bluesky_bridge_setting
       user = current_user
-      return render json: { error: 'User not found' }, status: :not_found unless user
-
-      account = user&.account
+      account = user.account
       return render json: { error: 'Account not found' }, status: :not_found unless account
 
       # Check if user meets the requirements for Bluesky Bridge
-      unless enable_bluesky_bridge?(account)
+      unless meets_bluesky_bridge_requirements?(account)
         return render json: { 
           error: 'User does not meet Bluesky Bridge requirements. Must have username, display_name, avatar, and header.' 
         }, status: :unprocessable_entity
       end
 
-      desired_value = truthy_param?(params[:bluesky_bridge_enabled])
-      if desired_value.nil?
-        return render json: { error: "Missing or invalid 'bluesky_bridge_enabled' parameter" }, status: :unprocessable_entity
+      # Validate parameter presence first
+      unless params.key?(:bluesky_bridge_enabled)
+        return render json: { error: "Missing 'bluesky_bridge_enabled' parameter" }, status: :bad_request
       end
+
+      desired_value = parse_boolean_param(params[:bluesky_bridge_enabled])
 
       if user.update(bluesky_bridge_enabled: desired_value)
         render json: { id: user.id, bluesky_bridge_enabled: user.bluesky_bridge_enabled }, status: :ok
@@ -33,14 +31,13 @@ module BlueskyBridge::Api::V1
 
     private
 
-    def truthy_param?(key)
-      ActiveModel::Type::Boolean.new.cast(key)
+    def parse_boolean_param(value)
+      ActiveModel::Type::Boolean.new.cast(value)
     end
 
-    def enable_bluesky_bridge?(account)
-      true
-      # account&.username.present? && account&.display_name.present? && 
-      # account&.avatar.present? && account&.header.present?
+    def meets_bluesky_bridge_requirements?(account)
+      account&.username.present? && account&.display_name.present? && 
+      account&.avatar.present? && account&.header.present?
     end
   end
 end

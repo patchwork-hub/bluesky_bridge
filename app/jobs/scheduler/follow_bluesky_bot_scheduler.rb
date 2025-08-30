@@ -32,21 +32,21 @@ module Scheduler
           UnfollowService.new.call(account, target_account)
         end
         
-        next if enable_bluesky_bridge?(account)
+        next if bluesky_bridge_enabled?(account)
 
         if account_relationship_array&.last['following'] == true && account_relationship_array&.last['requested'] == false
-          process_did_value(community, token, account)
+          process_did_value(user, token, account)
         else
           FollowService.new.call(account, target_account)
           account_relationship_array = handle_relationship(account, target_account.id)
-          process_did_value(community, token, account) if account_relationship_array.present? && account_relationship_array&.last && account_relationship_array&.last['following']
+          process_did_value(user, token, account) if account_relationship_array.present? && account_relationship_array&.last && account_relationship_array&.last['following']
         end
       end
     end
 
     private
 
-    def enable_bluesky_bridge?(account)
+    def bluesky_bridge_enabled?(account)
       account&.username.present? && account&.display_name.present? && 
       account&.avatar.present? && account&.header.present?
     end
