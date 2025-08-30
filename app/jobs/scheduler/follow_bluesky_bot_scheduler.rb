@@ -5,8 +5,8 @@ module Scheduler
     sidekiq_options retry: 0, lock: :until_executed, lock_ttl: 15.minutes.to_i, queue: :scheduler
 
     def perform
-      Rails.logger.info(">>>>>>>>>>>>FollowBlueskyBotScheduler started<<<<<<<<<<")
-      return if ENV.fetch('RAILS_ENV', nil).eql?('staging')
+      # Only execute if Bluesky Bridge is enabled via environment variable
+      return unless ENV['IS_BLUESKY_BRIDGE_ENABLED'].present? && ENV['IS_BLUESKY_BRIDGE_ENABLED'] == 'true'
 
       users = User.where(did_value: nil, bluesky_bridge_enabled: true)
       return unless users.any?
