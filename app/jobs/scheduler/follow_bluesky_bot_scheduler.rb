@@ -8,7 +8,7 @@ module Scheduler
       Rails.logger.info(">>>>>>>>>>>>FollowBlueskyBotScheduler started<<<<<<<<<<")
       return if ENV.fetch('RAILS_ENV', nil).eql?('staging')
 
-      users = User.where(did_value: nil, is_bulesky_bridge: true)
+      users = User.where(did_value: nil, bluesky_bridge_enabled: true)
       return unless users.any?
 
       users.each do |user|
@@ -32,7 +32,7 @@ module Scheduler
           UnfollowService.new.call(account, target_account)
         end
         
-        next unless enable_bride_bluesky?(account)
+        next if enable_bluesky_bridge?(account)
 
         if account_relationship_array&.last['following'] == true && account_relationship_array&.last['requested'] == false
           process_did_value(community, token, account)
@@ -46,7 +46,7 @@ module Scheduler
 
     private
 
-    def enable_bride_bluesky?(account)
+    def enable_bluesky_bridge?(account)
       account&.username.present? && account&.display_name.present? && 
       account&.avatar.present? && account&.header.present?
     end
