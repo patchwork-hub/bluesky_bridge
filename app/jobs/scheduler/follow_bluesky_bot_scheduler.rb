@@ -6,7 +6,7 @@ module Scheduler
 
     def perform
       # Only execute if Bluesky Bridge is enabled via environment variable
-      return unless ENV['IS_BLUESKY_BRIDGE_ENABLED'].present? && ENV['IS_BLUESKY_BRIDGE_ENABLED'] == 'true'
+      return unless ENV['BLUESKY_BRIDGE_ENABLED'].present? && ENV['BLUESKY_BRIDGE_ENABLED'] == 'true'
 
       users = User.where(did_value: nil, bluesky_bridge_enabled: true)
       return unless users.any?
