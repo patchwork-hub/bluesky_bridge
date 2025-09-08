@@ -1,40 +1,40 @@
 # frozen_string_literal: true
-require 'ostruct'
-require_dependency Rails.root.join(
-  'app/serializers/rest/account_relationship_severance_event_serializer'
-).to_s
+require 'httparty'
+require 'nokogiri'
 
 class AccountRelationshipsService < BaseService
   def call(admin_account, target_account_id)
     @admin_account = admin_account
-    account_relationships(target_account_id)
+    follow_bluesky_bot?(target_account_id)
   end
 
   private
 
-  def account_relationships(target_account_id)
-    target_account = Account.find_by(id: target_account_id)
-    return [] unless target_account
+  def follow_bluesky_bot?(target_account_id)
+    api_base_url = ENV['MASTODON_INSTANCE_URL']
+    token = fetch_oauth_token
+    return unless token
 
-    # This directly uses Mastodon's internal presenter
-    relationships_presenter = AccountRelationshipsPresenter.new(
-      [target_account], # Array of target accounts
-      @admin_account.id, # ID of the "current" account
-      with_suspended: true
-    )
+    response = check_account_relationship(target_account_id, api_base_url, token)
 
-    # Extract the relationships data from the presenter
-    relationships_hash = relationships_presenter.instance_variable_get(:@relationships) || {}
-
-    # Convert each hash into an OpenStruct so the serializer can call methods like .id
-    records = relationships_hash.values.map { |h| OpenStruct.new(h) }
-
-    # Serialize each record individually and return the array
-    records.map do |record|
-      ActiveModelSerializers::SerializableResource.new(
-        record,
-        serializer: REST::AccountRelationshipSeveranceEventSerializer
-      ).as_json
+    if response.code == 200
+      results = JSON.parse(response.body)
+      results
+    else
+      Rails.logger.error("Failed to fetch relationships target_account_id #{target_account_id}: #{response.body}")
+      []
     end
+  end
+
+  def check_account_relationship(target_account_id, api_base_url, token)
+    HTTParty.get("#{api_base_url}/api/v1/accounts/relationships",
+                 query: { with_suspended: true, id: [target_account_id] },
+                 headers: { 'Authorization' => "Bearer #{token}" })
+  end
+
+  def fetch_oauth_token
+    return nil unless @admin_account&.user
+    token_service = GenerateAdminAccessTokenService.new(@admin_account.user.id)
+    token_service.call
   end
 end
