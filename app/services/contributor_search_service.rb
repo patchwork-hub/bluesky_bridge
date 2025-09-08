@@ -3,40 +3,50 @@
 class ContributorSearchService
   def initialize(query, options = {})
     @query = query
-    # @api_base_url = options[:url]
+    @api_base_url = options[:url]
     @token = options[:token]
-    @account = options[:account]
+    @account_id = options[:account_id]
   end
 
   def call
-    results = search_mastodon
-    accounts = results[:accounts]
-    find_saved_accounts(accounts)
+    response = search_mastodon
+    accounts = response.parsed_response['accounts']
+    find_saved_accounts_with_retry(accounts)
   end
 
   private
 
   def search_mastodon
-    # Use Mastodon's internal SearchService
-    SearchService.new.call(
-      @query,
-      @account, # current_account
-      11, # limit
-      resolve: true
+    HTTParty.get("#{@api_base_url}/api/v2/search",
+      query: {
+        q: @query,
+        resolve: true,
+        limit: 11
+      },
+      headers: {
+        'Authorization' => "Bearer #{@token}"
+      }
     )
   end
 
-  def find_saved_accounts(accounts)
+  def find_saved_accounts_with_retry(accounts)
     return [] unless accounts.present?
 
-    accounts.map do |account|
+    saved_accounts = []
+    while saved_accounts.empty?
+      saved_accounts = Account.where(username: accounts.map { |account| account['username'] })
+      sleep(2) if saved_accounts.empty?
+    end
+
+    saved_accounts.map do |account|
+
       {
         'id' => account.id.to_s,
         'username' => account.username,
         'display_name' => account.display_name,
         'domain' => account.domain,
         'note' => account.note,
-        'avatar_url' => account.avatar.url,
+        'avatar_url' => account.avatar_url,
         'profile_url' => account.url,
         'following' => following_status(account),
         'is_muted' => is_muted(account),
