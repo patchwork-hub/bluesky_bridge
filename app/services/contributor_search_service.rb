@@ -1,6 +1,8 @@
 # frozen_string_literal: true
-
+require 'httparty'
 class ContributorSearchService
+
+
   def initialize(query, options = {})
     @query = query
     @api_base_url = options[:url]
