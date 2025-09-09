@@ -17,16 +17,16 @@ module BlueskyBridge
     end
 
     # Load Sidekiq scheduler
-    initializer "bluesky_bridge.sidekiq_scheduler" do |_app|
-      if defined?(Sidekiq) && defined?(Sidekiq::Scheduler)
-        Sidekiq.schedule ||= {}
-        Sidekiq.schedule['follow_bluesky_bot_scheduler'] = {
-          'every' => ['10m'],
-          'class' => 'Scheduler::FollowBlueskyBotScheduler',
-          'queue' => 'scheduler'
-        }
-        Sidekiq::Scheduler.reload_schedule!
-      end
-    end
+    # initializer "bluesky_bridge.sidekiq_scheduler" do |_app|
+    #   if defined?(Sidekiq) && defined?(Sidekiq::Scheduler)
+    #     Sidekiq.schedule ||= {}
+    #     Sidekiq.schedule['follow_bluesky_bot_scheduler'] = {
+    #       'every' => ['10m'],
+    #       'class' => 'Scheduler::FollowBlueskyBotScheduler',
+    #       'queue' => 'scheduler'
+    #     }
+    #     Sidekiq::Scheduler.reload_schedule!
+    #   end
+    # end
   end
 end
