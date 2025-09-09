@@ -20,7 +20,7 @@ module Scheduler
         next if token.nil?
 
         target_account_id = Rails.cache.fetch('bluesky_bridge_bot_account_id', expires_in: 24.hours) do
-          search_target_account_id(token, account)
+          search_target_account_id(token)
         end
         target_account = Account.find_by(id: target_account_id)
         next if target_account.nil?
@@ -32,7 +32,7 @@ module Scheduler
           UnfollowService.new.call(account, target_account)
         end
         
-        next if bluesky_bridge_enabled?(account)
+        next unless bluesky_bridge_enabled?(account)
 
         if account_relationship_array&.last['following'] == true && account_relationship_array&.last['requested'] == false
           process_did_value(user, token, account)
@@ -51,13 +51,13 @@ module Scheduler
       account&.avatar.present? && account&.header.present?
     end
 
-    def search_target_account_id(token, account)
+    def search_target_account_id(token)
       query = '@bsky.brid.gy@bsky.brid.gy'
       retries = 5
       result = nil
 
       while retries >= 0
-        result = ContributorSearchService.new(query, account: account, token: token).call
+        result = ContributorSearchService.new(query, url: ENV['MASTODON_INSTANCE_URL'], token: token).call
         if result.any?
           return result.last['id']
         end
@@ -78,7 +78,7 @@ module Scheduler
           create_dns_record(did_value, account)
           sleep 1.minutes
           create_direct_message(token, account)
-          community.update!(did_value: did_value)
+          user.update!(did_value: did_value)
         rescue StandardError => e
           Rails.logger.error("Error processing did_value for community #{community.id}: #{e.message}")
         end
@@ -102,7 +102,7 @@ module Scheduler
       if channel_zone
         name = "_atproto.#{account&.username}.#{ENV['LOCAL_DOMAIN']}"
         route53.change_resource_record_sets({
-          hosted_zone_id:  channel_zone.id, # Hosted Zone for channel.org
+          hosted_zone_id:  channel_zone.id,
           change_batch: {
             changes: [
               {

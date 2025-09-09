@@ -48,7 +48,7 @@ class ContributorSearchService
         'display_name' => account.display_name,
         'domain' => account.domain,
         'note' => account.note,
-        'avatar_url' => account.avatar_url,
+        'avatar_url' => account.avatar_remote_url,
         'profile_url' => account.url,
         'following' => following_status(account),
         'is_muted' => is_muted(account),
