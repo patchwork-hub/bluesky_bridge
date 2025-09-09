@@ -17,6 +17,8 @@
 #       # Merge our scheduler into the existing schedule
 #       config[:scheduler][:schedule].merge!(bluesky_scheduler_config)
 #     end
+    
+#     Rails.logger.info "BlueskyBridge: Added follow_bluesky_bot_scheduler to run every 10 minutes"
 #   else
 #     Rails.logger.warn "BlueskyBridge: Sidekiq not available, scheduler not configured"
 #   end
