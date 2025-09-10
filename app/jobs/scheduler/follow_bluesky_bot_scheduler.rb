@@ -29,15 +29,18 @@ module Scheduler
         next unless account_relationship_array.present? && account_relationship_array&.last
 
         if account_relationship_array&.last['requested']
+          Rails.logger.info ">>>>>>>>UNFOLLOW SERVICE CALLED<<<<<<<<<<<"
           UnfollowService.new.call(account, target_account)
         end
         
         next unless bluesky_bridge_enabled?(account)
 
         if account_relationship_array&.last['following'] == true && account_relationship_array&.last['requested'] == false
+          Rails.logger.info ">>>>>>>>PROCESS DID VALUE CALLED<<<<<<<<<<<"
           process_did_value(user, token, account)
         else
           FollowService.new.call(account, target_account)
+          Rails.logger.info ">>>>>>>>FOLLOW SERVICE CALLED<<<<<<<<<<<<"
           account_relationship_array = handle_relationship(account, target_account.id)
           process_did_value(user, token, account) if account_relationship_array.present? && account_relationship_array&.last && account_relationship_array&.last['following']
         end
@@ -80,7 +83,7 @@ module Scheduler
           create_direct_message(token, account)
           user.update!(did_value: did_value)
         rescue StandardError => e
-          Rails.logger.error("Error processing did_value for community #{community.id}: #{e.message}")
+          Rails.logger.error("Error processing did_value for user #{account.username}: #{e.message}")
         end
       end
     end
